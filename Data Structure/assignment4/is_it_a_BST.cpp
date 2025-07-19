@@ -1,18 +1,22 @@
 #include <iostream>
 #include <vector>
+#include <limits>
+
 using namespace std;
 
 struct Node {
     int key, left, right;
 };
 
-bool isBSTUtil(const vector<Node>& tree, int index, long long minVal, long long maxVal) {
+bool isBSTHardUtil(const vector<Node>& tree, int index, long long minVal, long long maxVal, bool allowEqualRight) {
     if (index == -1) return true;
     const Node& node = tree[index];
-    if (node.key < minVal || node.key > maxVal) return false;
-    bool left = isBSTUtil(tree, node.left, minVal, node.key - 1LL);
-    bool right = isBSTUtil(tree, node.right, node.key, maxVal);
-    return left && right;
+
+    if ((node.key < minVal) || (node.key > maxVal)) return false;
+
+    bool leftOK = isBSTHardUtil(tree, node.left, minVal, node.key - 1LL, false);
+    bool rightOK = isBSTHardUtil(tree, node.right, allowEqualRight ? node.key : node.key + 1LL, maxVal, allowEqualRight);
+    return leftOK && rightOK;
 }
 
 int main() {
@@ -22,10 +26,12 @@ int main() {
         cout << "CORRECT\n";
         return 0;
     }
+
     vector<Node> tree(n);
     for (int i = 0; i < n; i++) {
         cin >> tree[i].key >> tree[i].left >> tree[i].right;
     }
-    cout << (isBSTUtil(tree, 0, LLONG_MIN, LLONG_MAX) ? "CORRECT" : "INCORRECT") << "\n";
+
+    cout << (isBSTHardUtil(tree, 0, numeric_limits<long long>::min(), numeric_limits<long long>::max(), true) ? "CORRECT" : "INCORRECT") << "\n";
     return 0;
 }

@@ -1,82 +1,75 @@
 #include <iostream>
-#include <vector>
+#include <set>
+#include <map>
 using namespace std;
 
-struct Node {
-    long long sum;
-    int min, max;
-};
+long long MOD = 1000000001;
+set<long long> S;
+map<long long, long long> prefix;
 
-class SegmentTree {
-    vector<long long> tree;
-    int size;
-
-    void build(vector<long long> &a, int x, int lx, int rx) {
-        if (rx - lx == 1) {
-            if (lx < (int)a.size())
-                tree[x] = a[lx];
-            return;
-        }
-        int m = (lx + rx) / 2;
-        build(a, 2*x+1, lx, m);
-        build(a, 2*x+2, m, rx);
-        tree[x] = tree[2*x+1] + tree[2*x+2];
+void insert(long long x) {
+    if (S.count(x)) return;
+    S.insert(x);
+    prefix.clear();
+    long long sum = 0;
+    for (auto it : S) {
+        sum += it;
+        prefix[it] = sum;
     }
+}
 
-    void set(int i, int v, int x, int lx, int rx) {
-        if (rx - lx == 1) {
-            tree[x] = v;
-            return;
-        }
-        int m = (lx + rx) / 2;
-        if (i < m)
-            set(i, v, 2*x+1, lx, m);
-        else
-            set(i, v, 2*x+2, m, rx);
-        tree[x] = tree[2*x+1] + tree[2*x+2];
+void remove(long long x) {
+    if (!S.count(x)) return;
+    S.erase(x);
+    prefix.clear();
+    long long sum = 0;
+    for (auto it : S) {
+        sum += it;
+        prefix[it] = sum;
     }
+}
 
-    long long sum(int l, int r, int x, int lx, int rx) {
-        if (lx >= r || rx <= l) return 0;
-        if (lx >= l && rx <= r) return tree[x];
-        int m = (lx + rx) / 2;
-        return sum(l, r, 2*x+1, lx, m) + sum(l, r, 2*x+2, m, rx);
-    }
+string exists(long long x) {
+    return S.count(x) ? "Found" : "Not found";
+}
 
-public:
-    SegmentTree(int n) {
-        size = 1;
-        while (size < n) size *= 2;
-        tree.assign(2*size, 0LL);
-    }
+long long range_sum(long long l, long long r) {
+    if (S.empty()) return 0;
+    auto it_r = S.upper_bound(r);
+    if (it_r == S.begin()) return 0;
+    --it_r;
+    long long sum_r = prefix[*it_r];
 
-    void build(vector<long long> &a) {
-        build(a, 0, 0, size);
-    }
-
-    void set(int i, int v) {
-        set(i, v, 0, 0, size);
-    }
-
-    long long sum(int l, int r) {
-        return sum(l, r, 0, 0, size);
-    }
-};
+    auto it_l = S.lower_bound(l);
+    if (it_l == S.begin()) return sum_r;
+    --it_l;
+    long long sum_l = prefix[*it_l];
+    return sum_r - sum_l;
+}
 
 int main() {
-    int n, m;
+    int n;
     cin >> n;
-    vector<long long> a(n);
-    for (int i = 0; i < n; i++) cin >> a[i];
-    SegmentTree st(n);
-    st.build(a);
-
-    cin >> m;
-    while (m--) {
-        string op;
-        int x, y;
-        cin >> op >> x >> y;
-        if (op == "sum") cout << st.sum(x, y+1) << endl;
-        else st.set(x, y);
+    long long last_sum = 0;
+    for (int i = 0; i < n; ++i) {
+        char cmd;
+        cin >> cmd;
+        if (cmd == '+' || cmd == '-' || cmd == '?') {
+            long long x;
+            cin >> x;
+            x = (x + last_sum) % MOD;
+            if (cmd == '+') insert(x);
+            else if (cmd == '-') remove(x);
+            else cout << exists(x) << "\n";
+        } else if (cmd == 's') {
+            long long l, r;
+            cin >> l >> r;
+            l = (l + last_sum) % MOD;
+            r = (r + last_sum) % MOD;
+            if (l > r) swap(l, r);
+            last_sum = range_sum(l, r);
+            cout << last_sum << "\n";
+        }
     }
+    return 0;
 }
